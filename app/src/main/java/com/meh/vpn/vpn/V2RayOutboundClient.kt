@@ -120,7 +120,7 @@ object V2RayOutboundClient {
             return Int.MAX_VALUE
         }
 
-        val tlsProbeHosts = listOf("www.youtube.com", "www.instagram.com")
+        val tlsProbeHosts = listOf("cp.cloudflare.com", "www.google.com", "www.youtube.com")
 
         for (probeHost in tlsProbeHosts) {
             try {

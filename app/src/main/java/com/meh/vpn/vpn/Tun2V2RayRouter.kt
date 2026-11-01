@@ -36,9 +36,6 @@ class Tun2V2RayRouter(
     private val writeLock = Any()
 
     private val tcpSessions = ConcurrentHashMap<String, TcpNatSession>()
-    private val dnsIpToDomainCache = ConcurrentHashMap<String, String>()
-    private val domainToFakeIpCache = ConcurrentHashMap<String, String>()
-    private val fakeIpSequence = AtomicInteger(1)
     private val ipIdCounter = AtomicInteger(1000)
 
     /**
@@ -1119,6 +1116,9 @@ class Tun2V2RayRouter(
                     val dstPort = readUInt16(packet, 42)
                     if (dstPort == 53) {
                         handleIpv6UdpDns(packet, packetLen)
+                    } else {
+                        // Reject unhandled IPv6 UDP (e.g. QUIC on 443) immediately with ICMPv6 Port Unreachable
+                        writeTunPacket(buildIcmpv6PortUnreachablePacket(packet, packetLen))
                     }
                 }
             }
@@ -1311,10 +1311,68 @@ class Tun2V2RayRouter(
     }
 
     companion object {
+        // Persist FakeIP mappings across router restarts so client app DNS caches don't break on reconnect
+        private val dnsIpToDomainCache = ConcurrentHashMap<String, String>()
+        private val domainToFakeIpCache = ConcurrentHashMap<String, String>()
+        private val fakeIpSequence = AtomicInteger(1)
+
         private const val TCP_FLAG_FIN = 0x01
         private const val TCP_FLAG_SYN = 0x02
         private const val TCP_FLAG_RST = 0x04
         private const val TCP_FLAG_PSH = 0x08
         private const val TCP_FLAG_ACK = 0x10
     }
+
+    private fun buildIcmpv6PortUnreachablePacket(originalPacket: ByteArray, originalLen: Int): ByteArray {
+        val quotedLen = minOf(originalLen, 1232)
+        val icmpPayloadLen = 8 + quotedLen
+        val totalLen = 40 + icmpPayloadLen
+        val out = ByteArray(totalLen)
+
+        // IPv6 Header (40 bytes)
+        out[0] = 0x60
+        out[4] = ((icmpPayloadLen ushr 8) and 0xFF).toByte()
+        out[5] = (icmpPayloadLen and 0xFF).toByte()
+        out[6] = 58 // Next Header = ICMPv6
+        out[7] = 64 // Hop Limit
+        System.arraycopy(originalPacket, 24, out, 8, 16)  // Src IP = Orig Dst IP
+        System.arraycopy(originalPacket, 8, out, 24, 16)  // Dst IP = Orig Src IP
+
+        // ICMPv6 Header: Type 1 (Dest Unreachable), Code 4 (Port Unreachable)
+        out[40] = 1
+        out[41] = 4
+        out[42] = 0 // Checksum
+        out[43] = 0
+        out[44] = 0 // Unused 4 bytes
+        out[45] = 0
+        out[46] = 0
+        out[47] = 0
+
+        System.arraycopy(originalPacket, 0, out, 48, quotedLen)
+
+        // Compute ICMPv6 Pseudo-Header Checksum
+        var sum = 0
+        for (i in 8 until 40 step 2) {
+            sum += readUInt16(out, i)
+        }
+        sum += icmpPayloadLen
+        sum += 58 // Next Header = ICMPv6
+
+        var i = 0
+        while (i < icmpPayloadLen - 1) {
+            sum += readUInt16(out, 40 + i)
+            i += 2
+        }
+        if (i < icmpPayloadLen) {
+            sum += (out[40 + i].toInt() and 0xFF) shl 8
+        }
+        while ((sum ushr 16) != 0) {
+            sum = (sum and 0xFFFF) + (sum ushr 16)
+        }
+        val checksum = sum.inv() and 0xFFFF
+        out[42] = ((checksum ushr 8) and 0xFF).toByte()
+        out[43] = (checksum and 0xFF).toByte()
+        return out
+    }
+
 }
