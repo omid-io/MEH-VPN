@@ -60,20 +60,32 @@ jobs:
               -dname "CN=Android Debug,O=Android,C=US"
           fi
 
-      - name: Build debug APK
+      - name: Build APK
         run: gradle assembleDebug --stacktrace
+
+      - name: Prepare Named Release APK
+        run: |
+          mkdir -p dist
+          APK_FILE=$(find app/build/outputs/apk -name "*.apk" | head -n 1)
+          VERSION="${{ github.ref_name }}"
+          if [ -z "$VERSION" ] || [ "$VERSION" = "main" ]; then
+            VERSION="v1.2.4"
+          fi
+          cp "$APK_FILE" "dist/MEH-VPN-${VERSION}.apk"
+          cp "$APK_FILE" "dist/MEH-VPN-latest.apk"
+          echo "Created dist/MEH-VPN-${VERSION}.apk and dist/MEH-VPN-latest.apk"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: MEH-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: MEH-VPN-apk
+          path: dist/*.apk
           if-no-files-found: error
 
       # Automatic release, tag-triggered only: pushing a tag like
       # v1.3.0 builds the APK above and then publishes/updates a
-      # release for that tag with the APK attached, e.g.
-      # https://github.com/MEH-VPN/MEH-VPN/releases/download/v1.3.0/app-debug.apk
+      # release for that tag with the named APK attached:
+      # e.g. https://github.com/MEH-VPN/MEH-VPN/releases/download/v1.3.0/MEH-VPN-v1.3.0.apk
       # Release notes are auto-generated from the commits since the
       # previous tag (generate_release_notes), not a fixed sentence.
       - name: Publish release on tag
@@ -85,4 +97,4 @@ jobs:
           generate_release_notes: true
           draft: false
           prerelease: false
-          files: app/build/outputs/apk/debug/*.apk
+          files: dist/MEH-VPN-*.apk
