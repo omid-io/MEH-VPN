@@ -267,21 +267,7 @@ class VpnViewModel(application: Application) : AndroidViewModel(application) {
                     putString("source_repo", verifiedBest.sourceRepo)
                     putLong("ping_ms", verifiedBest.pingMs.toLong())
                 }
-                runCatching {
-                    val app = getApplication<Application>()
-                    ensureFirebaseInitialized()
-                    if (FirebaseAuth.getInstance().currentUser != null) {
-                        val databaseId = app.getString(R.string.firestore_database_id)
-                        val db = FirebaseFirestore.getInstance(databaseId)
-                        MehFirebaseRepository(db).saveConnectionLog(
-                            countryNameFa = countryOnly,
-                            flagEmoji = verifiedBest.flagEmoji,
-                            rawUri = verifiedBest.rawUri,
-                            sourceRepo = verifiedBest.sourceRepo,
-                            pingMs = verifiedBest.pingMs.toLong()
-                        )
-                    }
-                }
+                // Strict Zero-Logs Invariant: Never persist user connection URIs, server credentials, or browsing history to remote databases
 
                 _uiState.update {
                     it.copy(

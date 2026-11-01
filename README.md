@@ -28,7 +28,8 @@
 - **4-Stage Cascading Connection Engine:** Automatically falls back through four distinct circumvention techniques if upstream servers are blocked or throttled.
 - **Real End-to-End Internet Verification:** Never relies on fake TCP pings alone. Every candidate node is verified through an actual encrypted tunnel handshake and an HTTP `204 No Content` probe (`connectivitycheck.gstatic.com/generate_204` / `cp.cloudflare.com/generate_204`) before marking the VPN as connected.
 - **Native Android `VpnService` Tunnel:** Captures device traffic via a local TUN interface with protective socket binding (`VpnService.protect()`) to prevent routing loops and DNS leaks.
-- **No Registration or Login Required:** Works immediately out of the box with anonymous telemetry via Firebase Analytics.
+- **🔒 Strict Zero-Logs Architecture:** MEH guarantees 100% user privacy. No connection URIs, server credentials, destination URLs, or IP addresses are ever stored or transmitted to external databases.
+- **No Registration or Login Required:** Works immediately out of the box with zero tracking.
 
 ---
 
@@ -105,6 +106,7 @@ app/src/main/java/com/example/
 - **رابط کاربری فوق‌مینیمال و تک‌کلیده:** در داخل دایره مرکزی فقط آیکون پاور قرار دارد و تمامی وضعیت‌های اتصال (`خاموش`، `دریافت کانفیگ...`، `تست کانفیگ...`، `اتصال Aether...`، `اتصال Serverless...`، `اتصال SNI Spoof...`، `در حال اتصال...` و `متصل`) به همراه پرچم و نام کشور سرور، در بیرون و پایین دایره نمایش داده می‌شوند.
 - **موتور اتصال آبشاری ۴ مرحله‌ای:** در صورت مسدود بودن یا عدم پاسخگویی یک روش، برنامه بدون نیاز به دخالت کاربر بلافاصله روش بعدی را تست و متصل می‌کند.
 - **تست واقعی اینترنت (HTTP 204 Verification):** برنامه به پینگ ساده TCP اکتفا نمی‌کند؛ بلکه پیش از اعلام وضعیت «متصل»، ترافیک واقعی را از دل تونل عبور داده و پاسخ `HTTP 204` را بررسی می‌کند تا از باز بودن واقعی اینترنت اطمینان حاصل شود.
+- **🔒 معماری ۱۰۰٪ بدون لاگ (Zero-Logs Architecture):** هیچ‌گونه اطلاعات اتصال، آدرس‌های وب‌سایت‌ها، آی‌پی‌ها یا کلیدهای سرور در دیتابیس یا فایربیس ذخیره نمی‌شود. امنیت و حریم خصوصی کاربر اولویت قطعی پروژه است.
 - **بدون نیاز به ثبت‌نام یا لاگین:** اجرای بلافاصله پس از نصب، همراه با فونت فارسی توکار **وزیرمتن (Vazirmatn)**.
 
 ---
